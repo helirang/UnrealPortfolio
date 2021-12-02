@@ -3,24 +3,23 @@
 #include "MainCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "CodeGameAlpha.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h" //이거 없어도됨
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "MaingameHealthComponent.h"
-#include "OriginWeapon.h"
-#include "Net/UnrealNetwork.h"
-#include "TimerManager.h"
-#include "MainGamePlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "GameFramework/PlayerController.h"
-#include "Components/AudioComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "MaingameHealthComponent.h"
 #include "MainGamePlayerState.h"
+#include "Net/UnrealNetwork.h"
+#include "OriginWeapon.h"
 #include "Perception/AISense_Hearing.h"
+#include "TimerManager.h"
 
 AMainCharacter::AMainCharacter()
 {
@@ -261,8 +260,6 @@ void AMainCharacter::FallDeath()
 		else
 		{
 			StopFire();
-		/*	CharacterAudioComp3->SetIntParameter(FName("CharacterSound"), 0);
-			CharacterAudioComp3->Play();*/
 			AMainGamePlayerState* TempPlayerState = Cast<AMainGamePlayerState>(PlayerState);
 			TempPlayerState->AddDeadScore();
 		}
@@ -279,19 +276,22 @@ void AMainCharacter::FallDeath()
 
 void AMainCharacter::ClearDeath(float DisappearTime)
 {
-	bDied = true;
+	if (Role == ROLE_Authority)
+	{
+		bDied = true;
 
-	GetMovementComponent()->StopMovementImmediately(); 
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECR_Ignore);
-	SetActorTickEnabled(true);
+		GetMovementComponent()->StopMovementImmediately();
+		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECR_Ignore);
+		SetActorTickEnabled(true);
 
-	StopFire();
+		StopFire();
 
-	CurrentWeapon->SetLifeSpan(1.0f);
-	DetachFromControllerPendingDestroy();
-	SetLifeSpan(DisappearTime);
+		CurrentWeapon->SetLifeSpan(1.0f);
+		DetachFromControllerPendingDestroy();
+		SetLifeSpan(DisappearTime);
+	}
 }
 
 void AMainCharacter::OnRep_bFire()
